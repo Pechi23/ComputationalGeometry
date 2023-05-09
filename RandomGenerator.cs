@@ -30,13 +30,11 @@ namespace ComputationalGeometry
         }
         public static MyPoint[] GenerateRandomPoints(int n, int maxX, int maxY)
         {
-            MyPoint[] points = GenerateRandomPoints(n, 0, maxX, 0, maxY);
-            return points;
+            return GenerateRandomPoints(n, 0, maxX, 0, maxY);
         }
         public static List<MyPoint> GenerateRandomPointsList(int n, int maxX, int maxY)
         {
-            List<MyPoint> points = GenerateRandomPoints(n,maxX,maxY).ToList();
-            return points;
+            return GenerateRandomPoints(n,maxX,maxY).ToList();
         }
         public static Segment GenerateRandomSegment(int minX, int maxX, int minY, int maxY)
         {

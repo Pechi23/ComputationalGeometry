@@ -34,7 +34,9 @@ namespace ComputationalGeometry
 
         public int CompareTo(MyPoint? other)
         {
-            return this.X.CompareTo(other.X);
+            if(this.X!=other.X)
+                return this.X.CompareTo(other.X);
+            return this.Y.CompareTo(other.Y);
         }
     }
 }

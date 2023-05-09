@@ -30,5 +30,22 @@ namespace ComputationalGeometry
             return a.X * b.Y + b.X * c.Y + a.Y * c.X - b.Y * c.X - a.Y * b.X - c.Y * a.X;
         }
 
+        public static MyPoint GetMidPoint(MyPoint p1, MyPoint p2)
+        {
+            return new MyPoint((p1.X + p2.X) / 2, (p1.Y + p2.Y) / 2);
+        }
+
+        public static MyPoint CenterOfGravity(MyPoint[] points)
+        {
+            int totalX=0;
+            int totalY=0;
+            foreach(MyPoint point in points)
+            {
+                totalX += point.X;
+                totalY += point.Y;
+            }
+            return new MyPoint(totalX/points.Length,totalY/points.Length);
+        }
+
     }
 }

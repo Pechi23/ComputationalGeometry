@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
+using static System.Windows.Forms.DataFormats;
 
 namespace ComputationalGeometry
 {
@@ -78,6 +79,7 @@ namespace ComputationalGeometry
                             {
                                 case 0: button.Click += Lab6Exercise1_Click; break;
                                 case 1: button.Click += Lab6Exercise2_Click; break;
+                                case 2: button.Click += Lab6Exercise3_Click; break;
                             }
                             break;
                         case 6: button.Click += Lab7Exercise1_Click; break;
@@ -86,6 +88,7 @@ namespace ComputationalGeometry
                             {
                                 case 0: button.Click += Lab8Exercise1_Click; break;
                                 case 1: button.Click += Lab8Exercise2_Click; break;
+                                case 2: button.Click += Lab8Exercise3_Click; break;
                             }
                             break;
                         case 8: button.Click += Lab9Exercise1_Click; break;
@@ -119,12 +122,12 @@ namespace ComputationalGeometry
 
         private void Lab2Exercise2_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.FindSmallestAreaTriangleSorting(pictureBox1);
         }
 
         private void Lab2Exercise3_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.MinimumEnclosingCircle(pictureBox1);
         }
 
         private void Lab3Exercise1_Click(object? sender, EventArgs e)
@@ -159,6 +162,11 @@ namespace ComputationalGeometry
 
         private void Lab6Exercise2_Click(object? sender, EventArgs e)
         {
+            Engine.DrawInteractivePolygon(pictureBox1);
+        }
+
+        private void Lab6Exercise3_Click(object? sender, EventArgs e)
+        {
             throw new NotImplementedException();
         }
 
@@ -175,6 +183,11 @@ namespace ComputationalGeometry
         private void Lab8Exercise2_Click(object? sender, EventArgs e)
         {
             throw new NotImplementedException();
+        }
+
+        private void Lab8Exercise3_Click(object? sender, EventArgs e)
+        {
+            Engine.FindPolygonArea(pictureBox1);
         }
 
         private void Lab9Exercise1_Click(object? sender, EventArgs e)
