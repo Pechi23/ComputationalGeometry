@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Numerics;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 using static System.Windows.Forms.DataFormats;
@@ -12,18 +13,19 @@ namespace ComputationalGeometry
             InitializeComponent();
         }
 
-        private int labsCount = 9;
-        private int[] eachLabExerciseCount = new int[] { 3, 3, 2, 2, 1, 3, 1, 3, 1 };
+        private int labsCount = 11;
+        private int[] eachLabExerciseCount = new int[] { 3, 3, 2, 2, 1, 3, 1, 3, 1, 1, 1};
         PictureBox pictureBox1;
         private void MainForm_Load(object sender, EventArgs e)
         {
             pictureBox1 = new PictureBox()
             {
                 Location = new Point(20, 35 * labsCount),
-                Size = new Size(this.Width-50, this.Height - 35 * labsCount - 50),
-                BorderStyle= BorderStyle.FixedSingle,
-                Parent = this
+                Size = new Size(this.Width - 50, this.Height - 35 * labsCount - 50),
+                BorderStyle = BorderStyle.FixedSingle,
+                Parent = this,
             };
+            pictureBox1.Click += DrawPointOnPictureBox;
 
             List<List<Button>> buttons = new List<List<Button>>();
 
@@ -38,7 +40,8 @@ namespace ComputationalGeometry
                         Name = $"Lab{(i + 1).ToString()}Exercise{(j + 1).ToString()}",
                         Size = new Size(Size.Width / eachLabExerciseCount[i], 30),
                         Location = new Point(j * Size.Width / eachLabExerciseCount[i], i * 35),
-                        Parent = this
+                        //Click += $"{Name}_Click",
+                        Parent = this,
                     };
                     
                     switch (i)
@@ -92,11 +95,39 @@ namespace ComputationalGeometry
                             }
                             break;
                         case 8: button.Click += Lab9Exercise1_Click; break;
+                        case 9: button.Click += Lab10Exercise1_Click; break;
+                        case 10: button.Click += Lab11Exercise1_Click; break;
                         default: throw new IndexOutOfRangeException();
                     }
                     buttonsRow.Add(button);
                 }
                 buttons.Add(buttonsRow);
+            }
+        }
+
+
+        private void DrawPointOnPictureBox(object? sender, EventArgs e)
+        {
+            if(Engine.DrawingEnabled )
+            {
+                Point click = (e as MouseEventArgs).Location;
+                MyPoint point = new MyPoint(click.X, click.Y);
+                Graphics g = pictureBox1.CreateGraphics();
+                GraphicsHelper.DrawPoint(point, g);
+                Engine.drawnPoints.Add(new MyPoint(click.X, click.Y));
+
+                if (Engine.drawnPoints.Count()>1)
+                {
+                    GraphicsHelper.DrawSegment(new Segment(point, Engine.drawnPoints[Engine.drawnPoints.Count - 2]), g);
+                    if (Engine.drawnPoints.First().Distance(Engine.drawnPoints[Engine.drawnPoints.Count-1]) < 10)
+                    {
+                        Engine.DrawingEnabled = false;
+                        Engine.Complete = true;
+                        GraphicsHelper.DrawSegment(new Segment(Engine.drawnPoints.First(), Engine.drawnPoints[Engine.drawnPoints.Count - 1]), g);
+                        Engine.drawnPoints.RemoveAt(Engine.drawnPoints.Count - 1);
+                    }
+                }
+
             }
         }
 
@@ -157,7 +188,7 @@ namespace ComputationalGeometry
 
         private void Lab6Exercise1_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.RandomPolygonTriangulation(pictureBox1);
         }
 
         private void Lab6Exercise2_Click(object? sender, EventArgs e)
@@ -167,22 +198,22 @@ namespace ComputationalGeometry
 
         private void Lab6Exercise3_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.ConvexPolygonTriangulation(pictureBox1);
         }
 
         private void Lab7Exercise1_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.PolygonTriangulationUsingDiagonals(pictureBox1);
         }
 
         private void Lab8Exercise1_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.PolygonTriangulationUsingEarClipping(pictureBox1);
         }
 
         private void Lab8Exercise2_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.PolygonColoringUsingEarClipping(pictureBox1);
         }
 
         private void Lab8Exercise3_Click(object? sender, EventArgs e)
@@ -192,7 +223,18 @@ namespace ComputationalGeometry
 
         private void Lab9Exercise1_Click(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            Engine.SimplePolygonIntoMonotonePolygons(pictureBox1);
         }
+
+        private void Lab10Exercise1_Click(object? sender, EventArgs e)
+        {
+            Engine.SimplePolygonIntoMonotonePolygonsLinear(pictureBox1);
+        }
+
+        private void Lab11Exercise1_Click(object? sender, EventArgs e)
+        {
+            Engine.PolygonIntoConvexPolygonsLinear(pictureBox1);
+        }
+
     }
 }

@@ -38,5 +38,15 @@ namespace ComputationalGeometry
                 return this.X.CompareTo(other.X);
             return this.Y.CompareTo(other.Y);
         }
+
+        public bool isLeftTo(MyPoint a, MyPoint b)
+        {
+            return MyMath.Determinant(this, a, b) > 0;
+        }
+
+        public bool isRightTo(MyPoint a, MyPoint b)
+        {
+            return MyMath.Determinant(this, a, b) < 0;
+        }
     }
 }

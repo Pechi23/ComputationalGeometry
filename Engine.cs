@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -20,6 +21,8 @@ namespace ComputationalGeometry
         static int n = 10;
         static Bitmap bmp;
         static Graphics grp;
+        public static bool DrawingEnabled = false;
+        public static List<MyPoint> drawnPoints = new List<MyPoint>();
         public static void MinimumAreaRectangle(PictureBox pictureBox)
         {
             bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
@@ -361,10 +364,19 @@ namespace ComputationalGeometry
             grp = Graphics.FromImage(bmp);
 
             MyPoint[] points = RandomGenerator.GenerateRandomPoints(n, pictureBox.Width, pictureBox.Height);
-            List<Segment> convexHull = new List<Segment>();
+            MyPoint[] convexHull = GetConvexHull(points);
 
+            GraphicsHelper.DrawPoints(points, grp);
+            GraphicsHelper.DrawPolygon(convexHull.ToArray(), grp);
+            pictureBox.Image = bmp;
+        }
+
+        private static MyPoint[] GetConvexHull(MyPoint[] points)
+        {
+            List<MyPoint> convexHullPoints = new List<MyPoint>();
             Array.Sort(points, (a, b) => a.X.CompareTo(b.X));
             int p = 0;
+            convexHullPoints.Add(points[p]);
             do
             {
 
@@ -374,19 +386,194 @@ namespace ComputationalGeometry
                     if (MyMath.Determinant(points[p], points[q], points[i]) < 0)
                         q = i;
 
-                convexHull.Add(new Segment(points[p], points[q]));
+                convexHullPoints.Add(points[q]);
                 p = q;
 
             } while (p != 0);
 
+            return convexHullPoints.ToArray();
+        }
+
+        public static void RandomPolygonTriangulation(PictureBox pictureBox)
+        {
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            MyPoint[] points = RandomGenerator.GenerateRandomPoints(n, pictureBox.Width, pictureBox.Height);
+            List<Segment> result = new List<Segment>();
+
+            List<Segment> edges = new List<Segment>();
+            for (int i = 0; i < points.Length - 1; i++)
+                for (int j = i + 1; j < points.Length; j++)
+                    edges.Add(new Segment(points[i], points[j]));
+
+            edges.Sort();
+
+            foreach(Segment edge in edges)
+            {
+                bool ok = true;
+                foreach (Segment added in result)
+                    if (edge.IntersectsForTriangulation(added))
+                    {
+                        ok = false;
+                        break;
+                    }
+                if(ok)
+                    result.Add(edge);
+            }
+
             GraphicsHelper.DrawPoints(points, grp);
-            GraphicsHelper.DrawSegments(convexHull, grp);
+            GraphicsHelper.DrawSegments(result, grp);
             pictureBox.Image = bmp;
         }
 
-        public static void DrawInteractivePolygon(PictureBox pictureBox)
+        public static bool Complete = false;
+        public static async Task DrawInteractivePolygon(PictureBox pictureBox)
         {
-            throw new NotImplementedException();
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+            drawnPoints.Clear();
+            grp.Clear(Color.LightGray);
+            DrawingEnabled = true;
+            Complete = false;
+
+            pictureBox.Image = bmp;
+            while(!Complete)
+            {
+                await Task.Delay(100);
+            }
+        }
+
+        public static void ConvexPolygonTriangulation(PictureBox pictureBox)
+        {
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            MyPoint[] points = RandomGenerator.GenerateRandomPoints(n, pictureBox.Width, pictureBox.Height);
+            MyPoint[] convexHull = GetConvexHull(points);
+
+            for (int i = 1;i < convexHull.Length;i++)
+                GraphicsHelper.DrawSegment(new Segment(convexHull[0], convexHull[i]), grp, new Pen(Color.Orange, 2));
+
+            GraphicsHelper.DrawPolygon(convexHull, grp);
+            pictureBox.Image = bmp;
+        }
+
+        public static async Task PolygonTriangulationUsingDiagonals(PictureBox pictureBox)
+        {
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            await DrawInteractivePolygon(pictureBox);
+            MyPoint[] points = drawnPoints.ToArray();
+
+            List<Segment> diagonals = new List<Segment>();
+
+            bool finished = false;
+            for (int i = 0; i < points.Length - 2 && !finished; i++)
+            {
+                for (int j = i + 2; j < points.Length && !finished; j++)
+                {
+                    if (i == 0 && j == n - 1)
+                        break;
+
+                    Segment segment = new Segment(points[i], points[j]);
+
+                    bool ok = true;
+                    foreach (Segment diagonal in diagonals)
+                        if (segment.IntersectsForTriangulation(diagonal))
+                            ok = false;
+
+                    if (ok && segment.IsDiagonal(points))
+                        diagonals.Add(new Segment(points[i], points[j]));
+
+                    if (diagonals.Count == (points.Length-3))
+                        finished = true;
+                }
+            }
+
+            GraphicsHelper.DrawPolygon(points, grp);
+            GraphicsHelper.DrawSegments(diagonals, grp, new Pen(Color.Orange, 2));
+
+            pictureBox.Image = bmp;
+        }
+
+        private static List<Triangle> triangles = new List<Triangle>();
+        public static async Task PolygonTriangulationUsingEarClipping(PictureBox pictureBox)
+        {
+            triangles.Clear();
+
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            await DrawInteractivePolygon(pictureBox);
+
+            List<MyPoint> points = drawnPoints;
+            List<Segment> diagonals = new List<Segment>();
+
+            GraphicsHelper.DrawPolygon(points.ToArray(), grp);
+
+            while (points.Count > 3)
+            {
+                for (int i = 0; i < points.Count; i++)
+                {
+                    int index0 = i;
+                    int index1 = (i - 1 + points.Count) % points.Count;
+                    int index2 = (i + 1) % points.Count;
+
+                    Segment diagonal = new Segment(points[index1], points[index2]);
+
+                    if(diagonal.IsDiagonal(points.ToArray()))
+                    {
+                        diagonals.Add(diagonal);
+                        triangles.Add(new Triangle(points[index0], points[index1], points[index2]));
+                        points.RemoveAt(index0);
+                        break;
+                    }
+
+                }
+            }
+            triangles.Add(new Triangle(points[0], points[1], points[2]));
+
+            GraphicsHelper.DrawSegments(diagonals, grp, new Pen(Color.Orange, 2));
+
+            pictureBox.Image = bmp;
+        }
+
+        public static async Task PolygonColoringUsingEarClipping(PictureBox pictureBox)
+        {
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            await PolygonTriangulationUsingEarClipping(pictureBox);
+
+            triangles[triangles.Count - 1].Colors[0] = Color.Red;
+            triangles[triangles.Count - 1].Colors[1] = Color.Green;
+            triangles[triangles.Count - 1].Colors[2] = Color.Blue;
+
+            triangles[triangles.Count - 1].DrawTriangleColors(grp);
+
+            for (int i = triangles.Count - 2; i >= 0; i--)
+            {
+                //get the colors from the last triangle
+                if (triangles[i + 1].ContainsPoint(triangles[i].Points[0]) >= 0)
+                    triangles[i].Colors[0] = triangles[i + 1].Colors[triangles[i + 1].ContainsPoint(triangles[i].Points[0])];
+                if (triangles[i + 1].ContainsPoint(triangles[i].Points[1]) >= 0)
+                    triangles[i].Colors[1] = triangles[i + 1].Colors[triangles[i + 1].ContainsPoint(triangles[i].Points[1])];
+                if (triangles[i + 1].ContainsPoint(triangles[i].Points[2]) >= 0)
+                    triangles[i].Colors[2] = triangles[i + 1].Colors[triangles[i + 1].ContainsPoint(triangles[i].Points[2])];
+
+                //find the missing color if needed
+                if (triangles[i].Colors[0] == Color.Black)
+                    triangles[i].Colors[0] = triangles[i].GetMissingColor();
+                if (triangles[i].Colors[1] == Color.Black)
+                    triangles[i].Colors[1] = triangles[i].GetMissingColor();
+                if (triangles[i].Colors[2] == Color.Black)
+                    triangles[i].Colors[2] = triangles[i].GetMissingColor();
+
+                triangles[i].DrawTriangleColors(grp);
+            }
+            pictureBox.Image = bmp;
         }
 
         public static void FindPolygonArea(PictureBox pictureBox)
@@ -394,7 +581,8 @@ namespace ComputationalGeometry
             bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
             grp = Graphics.FromImage(bmp);
 
-            MyPoint[] points = RandomGenerator.GenerateRandomPoints(n, pictureBox.Width, pictureBox.Height);
+            MyPoint[] randomPoints = RandomGenerator.GenerateRandomPoints(n, pictureBox.Width, pictureBox.Height);
+            MyPoint[] points = GetConvexHull(randomPoints);
 
             double polygonArea = 0;
             MyPoint origin = new MyPoint(0, 0);
@@ -408,6 +596,68 @@ namespace ComputationalGeometry
             grp.DrawString($"Area: {polygonArea.ToString()}", new Font(FontFamily.GenericSansSerif, 15),new SolidBrush(Color.Green), new Point(10, 10));
             GraphicsHelper.DrawPolygon(points, grp);
             pictureBox.Image = bmp;
+        }
+
+        public static async Task SimplePolygonIntoMonotonePolygons(PictureBox pictureBox)
+        {
+            bmp = new Bitmap(pictureBox.Width, pictureBox.Height);
+            grp = Graphics.FromImage(bmp);
+
+            await DrawInteractivePolygon(pictureBox);
+            MyPoint[] points = drawnPoints.ToArray();
+            GraphicsHelper.DrawPolygon(points, grp);
+
+            List<Segment> segments = new List<Segment>();
+
+            //Array.Sort(points, (a, b) => b.Y.CompareTo(a.Y));
+
+            for (int i = 0; i < points.Length; i++)
+            {
+                int indexBefore = (i - 1 + points.Length) % points.Length;
+                int indexAfter = (i + 1) % points.Length;
+
+                if (points[indexBefore].isLeftTo(points[indexAfter], points[i]))
+                {
+                    if (points[indexBefore].Y < points[i].Y && points[indexAfter].Y < points[i].Y)
+                    {
+                        for (int j = i+1; j < points.Length; j++)
+                        {
+                            Segment segment = new Segment(points[i], points[j]);
+                            if (segment.IsDiagonal(points))
+                            {
+                                segments.Add(segment);
+                                break;
+                            }
+                        }
+                    }
+                    if (points[indexBefore].Y > points[i].Y && points[indexAfter].Y > points[i].Y)
+                    {
+                        for (int j = i-1 ; j >= 0; j--)
+                        {
+                            Segment segment = new Segment(points[i], points[j]);
+                            if (segment.IsDiagonal(points))
+                            {
+                                segments.Add(segment);
+                                break;                            
+                            }
+                                
+                        }
+                    }
+                }
+            }
+
+            GraphicsHelper.DrawSegments(segments, grp, new Pen(Color.Orange, 2));
+            pictureBox.Image = bmp;
+        }
+
+        internal static void SimplePolygonIntoMonotonePolygonsLinear(PictureBox pictureBox1)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static void PolygonIntoConvexPolygonsLinear(PictureBox pictureBox1)
+        {
+            throw new NotImplementedException();
         }
     }
 }

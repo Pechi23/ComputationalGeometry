@@ -40,14 +40,23 @@ namespace ComputationalGeometry
                 grp.DrawLine(new Pen(Color.Blue, 3), points[i].X, points[i].Y, points[(i + 1) % points.Length].X, points[(i + 1) % points.Length].Y);
             }
         }
+        public static void DrawSegment(Segment segment, Graphics grp, Pen pen)
+        {
+            grp.DrawLine(pen, segment.From.X, segment.From.Y, segment.To.X, segment.To.Y);
+        }
         public static void DrawSegment(Segment segment, Graphics grp)
         {
-            grp.DrawLine(new Pen(Color.Blue, 3), segment.From.X, segment.From.Y, segment.To.X, segment.To.Y);
+            DrawSegment(segment, grp, new Pen(Color.Blue, 3));
         }
         public static void DrawSegments(List<Segment> segments, Graphics grp)
         {
             for (int i = 0; i < segments.Count; i++)
-                DrawSegment(segments[i],grp);
+                DrawSegment(segments[i], grp);
+        }
+        public static void DrawSegments(List<Segment> segments, Graphics grp, Pen pen)
+        {
+            for (int i = 0; i < segments.Count; i++)
+                DrawSegment(segments[i],grp,pen);
         }
         public static void DrawRectangle(MyPoint a,MyPoint b, Graphics grp)
         {
